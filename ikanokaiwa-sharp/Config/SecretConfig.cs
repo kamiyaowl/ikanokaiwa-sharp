@@ -10,6 +10,8 @@ namespace ikanokaiwa_sharp.Config {
         public string Secret1 { get; set; } = "";
         public string Secret2 { get; set; } = "";
 
+        public ulong GuildId { get; set; } = 0;
+
         public ulong VoiceChannelId0 { get; set; } = 0;
         public ulong VoiceChannelId1 { get; set; } = 0;
         public ulong VoiceChannelId2 { get; set; } = 0;
