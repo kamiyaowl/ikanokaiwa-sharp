@@ -43,12 +43,9 @@ namespace ikanokaiwa_sharp {
                     g = d.GetGuild(secret.GuildId);
                     vc = g?.VoiceChannels?.FirstOrDefault(x => x.Id == channels[index]) ?? null;
                 }
-                if (vc == null) {
-                    Console.WriteLine($"[{DateTime.Now}] [{index}] Invalid Channel Id: {channels[index]}");
-                    Environment.Exit(1);
-                }
                 // ボイチャ参加
                 var audioClient = await vc.ConnectAsync();
+                audioClient.StreamCreated += discordAudioClient_StreamCreated;
 
             }
 
@@ -59,6 +56,11 @@ namespace ikanokaiwa_sharp {
                 await d.StopAsync();
             }
             secret.ToJsonFile(SecretConfig.PATH);
+        }
+
+        private static Task discordAudioClient_StreamCreated(ulong arg1, Discord.Audio.AudioInStream arg2) {
+            Console.WriteLine($"[{DateTime.Now}] StreamCreated");
+            return Task.CompletedTask;
         }
 
         private static Task d_Log(Discord.LogMessage message) {
