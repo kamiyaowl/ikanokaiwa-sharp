@@ -1,7 +1,10 @@
-﻿using Discord.WebSocket;
+﻿using Discord.Audio;
+using Discord.WebSocket;
 using ikanokaiwa_sharp.Config;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ikanokaiwa_sharp {
@@ -9,6 +12,7 @@ namespace ikanokaiwa_sharp {
         private static SecretConfig secret;
         private static string[] tokens;
         private static ulong[] channels;
+        private static CancellationTokenSource[] cancelTokens;
 
         public static async Task Main(string[] args) {
             secret = SecretConfig.PATH.FromJsonFile(() => new SecretConfig());
@@ -22,6 +26,10 @@ namespace ikanokaiwa_sharp {
                 secret.VoiceChannelId1,
                 secret.VoiceChannelId2,
             };
+            cancelTokens =
+                Enumerable.Range(0, 3)
+                          .Select(_ => new CancellationTokenSource())
+                          .ToArray();
 
             var discords =
                 Enumerable.Range(0, 3)
@@ -45,21 +53,27 @@ namespace ikanokaiwa_sharp {
                 }
                 // ボイチャ参加
                 var audioClient = await vc.ConnectAsync();
-                audioClient.StreamCreated += discordAudioClient_StreamCreated;
-
+                var stream = audioClient.CreateDirectPCMStream(AudioApplication.Mixed);
+                await ReceiveAudioStream(cancelTokens[index].Token, d, g, vc, stream);
             }
 
             Console.WriteLine($"[{DateTime.Now}] press any key to exit...");
             Console.ReadKey();
-
+            foreach (var cancel in cancelTokens) {
+                cancel.Cancel();
+            }
             foreach (var d in discords) {
                 await d.StopAsync();
             }
             secret.ToJsonFile(SecretConfig.PATH);
         }
 
-        private static Task discordAudioClient_StreamCreated(ulong arg1, Discord.Audio.AudioInStream arg2) {
-            Console.WriteLine($"[{DateTime.Now}] StreamCreated");
+        private static Task ReceiveAudioStream(CancellationToken cancelToken, DiscordSocketClient d, SocketGuild g, SocketVoiceChannel vc, AudioOutStream stream) {
+            Console.WriteLine($"[{DateTime.Now}] [{g.Name}] [{vc.Name}] Start Streaming");
+            while (!cancelToken.IsCancellationRequested) {
+                Console.WriteLine($"[{DateTime.Now}] {stream.Position} {stream.Length}");
+            }
+            Console.WriteLine($"[{DateTime.Now}] [{g.Name}] [{vc.Name}] Stop Streaming");
             return Task.CompletedTask;
         }
 
